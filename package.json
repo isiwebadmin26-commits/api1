@@ -1,0 +1,17 @@
+{
+  "name": "isi-mail-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vercel serverless API for sending the ISI hospital email template",
+  "main": "api/send-mail.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.14"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
