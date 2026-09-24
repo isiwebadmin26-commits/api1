@@ -34,9 +34,8 @@ export function getReportRecipients(): string[] {
     return envVal.split(",").map((e) => e.trim()).filter(Boolean);
   }
   return [
-    "v.varshith@isisecurity.in",
-    "bv@trustflow.in",
     "poojasri.aram@gmail.com",
+    "bv@trustflow.in",
   ];
 }
 
@@ -44,17 +43,13 @@ export function getReportRecipients(): string[] {
  * Returns array of career digest recipients from environment variable or fallback.
  */
 export function getCareerRecipients(): string[] {
-  const envVal = process.env.CAREER_EMAIL_TO;
+  const envVal = process.env.CAREER_EMAIL_TO || process.env.EMAIL_TO;
   if (envVal && envVal.trim()) {
     return envVal.split(",").map((e) => e.trim()).filter(Boolean);
   }
   return [
-    "hrms2026@isisecurity.in",
-    "careers@isisecurity.in",
-    "v.varshith@isisecurity.in",
-    "v.vishal@isisecurity.in",
-    "bv@trustflow.in",
     "poojasri.aram@gmail.com",
+    "bv@trustflow.in",
   ];
 }
 
