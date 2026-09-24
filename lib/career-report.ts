@@ -230,7 +230,7 @@ export async function runCareerReport({ dryRun = false }: { dryRun?: boolean }) 
   const sheetUrl = getSpreadsheetUrl();
   const emailHtml = buildMonthlyCareerEmailHtml(monthLabel, candidates, sheetUrl);
   const subject =
-    "📁 [Career Applications Lead Generation] Monthly Resumes Digest – " +
+    "[Career Applications] Monthly Resumes Digest - " +
     monthLabel +
     " (" +
     candidates.length +

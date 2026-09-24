@@ -34,7 +34,6 @@ export function getReportRecipients(): string[] {
     return envVal.split(",").map((e) => e.trim()).filter(Boolean);
   }
   return [
-    "pooja@deeptrust.tech",
     "v.varshith@isisecurity.in",
     "bv@trustflow.in",
     "poojasri.aram@gmail.com",
@@ -52,6 +51,9 @@ export function getCareerRecipients(): string[] {
   return [
     "hrms2026@isisecurity.in",
     "careers@isisecurity.in",
+    "v.varshith@isisecurity.in",
+    "v.vishal@isisecurity.in",
+    "bv@trustflow.in",
     "poojasri.aram@gmail.com",
   ];
 }

@@ -50,7 +50,7 @@ export function formatDateKolkata(date: Date, pattern: string): string {
 export function normalizeRoutePath(rawPathOrUrl: unknown): string {
   if (!rawPathOrUrl) return "/";
   let str = String(rawPathOrUrl).trim();
-  // Strip domain if present (e.g. http://trustgrid.ai/solutions/... or https://www.trustgrid.ai/...)
+  // Strip domain if present (e.g. http://isisecurity.in/solutions/... or https://www.isisecurity.in/...)
   str = str.replace(/^https?:\/\/[^\/]+/i, "");
   // Strip query parameters (?utm_source=... etc) and hash fragments (#...)
   str = str.split("?")[0].split("#")[0].trim();
@@ -693,12 +693,10 @@ export function buildExecutiveAnalyticsBriefHtml(
     "</head>",
     '<body style="font-family: Segoe UI, -apple-system, BlinkMacSystemFont, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 25px 15px;">',
     '  <div style="max-width: 660px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">',
-    '    <div style="background: linear-gradient(135deg, #090d16 0%, #1e1b4b 60%, #312e81 100%); padding: 28px 25px; color: #ffffff;">',
-    '      <div style="font-size: 11px; font-weight: 800; color: #818cf8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">TRUSTGRID.AI ENTERPRISE ANALYTICS</div>',
-    '      <h2 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">' +
-      mainHeading +
-      "</h2>",
-    '      <p style="margin: 6px 0 0 0; font-size: 13px; color: #c7d2fe;">' + subtitle + "</p>",
+    '    <div style="background: linear-gradient(135deg, #001a40 0%, #003380 100%); padding: 28px 25px; color: #ffffff; border-bottom: 3px solid #0284c7;">',
+    '      <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 4px;">ISI SECURITY | INDUSTRIAL SECURITY & INTELLIGENCE</div>',
+    '      <h2 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">EXECUTIVE ANALYTICS BRIEF</h2>',
+    '      <p style="margin: 6px 0 0 0; font-size: 13px; color: #93c5fd;">' + subtitle + "</p>",
     "    </div>",
     '    <div style="padding: 24px 22px;">',
     "      <!-- KPIS -->",
@@ -707,7 +705,7 @@ export function buildExecutiveAnalyticsBriefHtml(
     '          <td width="25%" style="padding: 4px;"><div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center;"><div style="font-size:10px;font-weight:800;color:#64748b;">VISITORS</div><div style="font-size:18px;font-weight:800;color:#0f172a;margin-top:4px;">' +
       formatNum(k.visitors) +
       "</div></div></td>",
-    '          <td width="25%" style="padding: 4px;"><div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center;"><div style="font-size:10px;font-weight:800;color:#64748b;">SESSIONS</div><div style="font-size:18px;font-weight:800;color:#6366f1;margin-top:4px;">' +
+    '          <td width="25%" style="padding: 4px;"><div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center;"><div style="font-size:10px;font-weight:800;color:#64748b;">SESSIONS</div><div style="font-size:18px;font-weight:800;color:#0284c7;margin-top:4px;">' +
       formatNum(k.sessions) +
       "</div></div></td>",
     '          <td width="25%" style="padding: 4px;"><div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center;"><div style="font-size:10px;font-weight:800;color:#64748b;">LEADS</div><div style="font-size:18px;font-weight:800;color:#059669;margin-top:4px;">' +
@@ -729,7 +727,7 @@ export function buildExecutiveAnalyticsBriefHtml(
       (data.trend ? data.trend.chartUrl : "") +
       '" alt="Trend Analysis: Visitors / Sessions vs Leads Captured" style="width: 100%; max-width: 580px; height: auto; display: block; margin: 0 auto; border-radius: 6px;" />',
     '          <div style="margin-top: 10px; font-size: 11px; color: #64748b; display: flex; justify-content: center; gap: 16px;">',
-    '            <span style="color:#6366f1; font-weight:700;">&mdash; Visitors / Sessions</span>',
+    '            <span style="color:#0284c7; font-weight:700;">&mdash; Visitors / Sessions</span>',
     '            <span style="color:#059669; font-weight:700;">&mdash; Leads Captured</span>',
     "          </div>",
     "        </div>",
@@ -805,14 +803,15 @@ export function buildExecutiveAnalyticsBriefHtml(
     '      <div style="text-align:center;margin-top:20px;">',
     '        <a href="' +
       data.dashboardUrl +
-      '" target="_blank" style="background:#6366f1;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:700;font-size:13px;display:inline-block;">Open Live Master Spreadsheet</a>',
+      '" target="_blank" style="background:#003380;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:700;font-size:13px;display:inline-block;">Open Live Google Sheets Master Database</a>',
     "      </div>",
     "    </div>",
-    '    <div style="background: #f8fafc; padding: 16px 20px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center;">',
+    '    <div style="background: #f8fafc; padding: 16px 20px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.6;">',
     "      &copy; " +
       new Date().getFullYear() +
-      " TRUSTGRID.AI. Confidential Executive Analytics Report.<br>",
-    "      Direct Inquiries: <strong>webadmin.trustgrid.ai@gmail.com</strong>",
+      " Industrial Security & Intelligence (India) Pvt Ltd. All rights reserved.<br>",
+    "      CONFIDENTIAL &bull; Generated automatically by ISI Security Digital Analytics Intelligence Engine.<br>",
+    "      Authorized for Senior Leadership & Operations Management only.",
     "    </div>",
     "  </div>",
     "</body>",
@@ -837,7 +836,7 @@ export async function runWeeklyReport({ dryRun = false }: { dryRun?: boolean }) 
 
   const reportData = await aggregateExecutiveReportData("WEEKLY", w1Start, w1End, w2Start, w2End);
   const emailHtml = buildExecutiveAnalyticsBriefHtml(reportData, "WEEKLY");
-  const subject = "[TRUSTGRID.AI] Weekly Analytics Report - " + cleanEmailText(reportData.periodRangeStr);
+  const subject = "[ISI Security] Weekly Executive Analytics Brief - " + cleanEmailText(reportData.periodRangeStr);
 
   if (!dryRun) {
     const recipients = getReportRecipients();
@@ -845,6 +844,7 @@ export async function runWeeklyReport({ dryRun = false }: { dryRun?: boolean }) 
       to: recipients,
       subject,
       html: emailHtml,
+      from: process.env.EMAIL_FROM || "ISI Security Executive Analytics <akshaycs@isisecurity.in>",
     });
   }
 
@@ -855,7 +855,7 @@ export async function runWeeklyReport({ dryRun = false }: { dryRun?: boolean }) 
     period: reportData.periodRangeStr,
     kpis: reportData.kpis,
     comparison: reportData.comparison,
-    ...(dryRun ? { html: emailHtml } : {}),
+    ...(dryRun ? { html: emailHtml, subject } : {}),
   };
 }
 
@@ -877,7 +877,7 @@ export async function runMonthlyReport({ dryRun = false }: { dryRun?: boolean })
   const reportData = await aggregateExecutiveReportData("MONTHLY", m1Start, m1End, m2Start, m2End);
   const monthLabel = formatDateKolkata(m1End, "MMMM yyyy");
   const emailHtml = buildExecutiveAnalyticsBriefHtml(reportData, "MONTHLY");
-  const subject = "[TRUSTGRID.AI] Monthly Analytics Report - " + cleanEmailText(monthLabel);
+  const subject = "[ISI Security] Monthly Executive Analytics Brief - " + cleanEmailText(monthLabel);
 
   if (!dryRun) {
     const recipients = getReportRecipients();
@@ -885,6 +885,7 @@ export async function runMonthlyReport({ dryRun = false }: { dryRun?: boolean })
       to: recipients,
       subject,
       html: emailHtml,
+      from: process.env.EMAIL_FROM || "ISI Security Executive Analytics <akshaycs@isisecurity.in>",
     });
   }
 
@@ -895,7 +896,7 @@ export async function runMonthlyReport({ dryRun = false }: { dryRun?: boolean })
     month: monthLabel,
     kpis: reportData.kpis,
     comparison: reportData.comparison,
-    ...(dryRun ? { html: emailHtml } : {}),
+    ...(dryRun ? { html: emailHtml, subject } : {}),
   };
 }
 
@@ -912,7 +913,7 @@ export async function runDailyReport({ dryRun = false }: { dryRun?: boolean } = 
 
   const reportData = await aggregateExecutiveReportData("DAILY", yesterday, yesterday, dayBefore, dayBefore);
   const emailHtml = buildExecutiveAnalyticsBriefHtml(reportData, "DAILY");
-  const subject = "[TRUSTGRID.AI] Daily Analytics Report - " + cleanEmailText(reportData.periodDateStr);
+  const subject = "[ISI Security] Daily Executive Analytics Brief - " + cleanEmailText(reportData.periodDateStr);
 
   if (!dryRun) {
     const recipients = getReportRecipients();
@@ -920,6 +921,7 @@ export async function runDailyReport({ dryRun = false }: { dryRun?: boolean } = 
       to: recipients,
       subject,
       html: emailHtml,
+      from: process.env.EMAIL_FROM || "ISI Security Executive Analytics <akshaycs@isisecurity.in>",
     });
   }
 
@@ -930,6 +932,6 @@ export async function runDailyReport({ dryRun = false }: { dryRun?: boolean } = 
     date: reportData.periodDateStr,
     kpis: reportData.kpis,
     comparison: reportData.comparison,
-    ...(dryRun ? { html: emailHtml } : {}),
+    ...(dryRun ? { html: emailHtml, subject } : {}),
   };
 }
