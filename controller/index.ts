@@ -117,9 +117,29 @@ export async function dispatchController(
   if (!security.passed) return;
 
   // Extract controller code from body (preferred for POST) or query string
-  const rawCode =
+  let rawCode =
     (req.body && typeof req.body === "object" ? req.body.code : undefined) ||
     (req.query.code as string);
+
+  // Fallback: match URL path (e.g. /reports/daily/leads -> DRL)
+  if (!rawCode) {
+    const candidateUrls: string[] = [
+      req.url,
+      req.headers["x-matched-path"] as string,
+      req.headers["x-forwarded-url"] as string,
+    ].filter((u): u is string => typeof u === "string" && u.length > 0);
+
+    for (const urlStr of candidateUrls) {
+      const cleanUrl = urlStr.split("?")[0].replace(/\/$/, "");
+      for (const [code, def] of Object.entries(API_ROUTES)) {
+        if (cleanUrl.endsWith(def.path) || cleanUrl === def.path) {
+          rawCode = code;
+          break;
+        }
+      }
+      if (rawCode) break;
+    }
+  }
 
   if (!rawCode) {
     // If no code is provided, return manifest of available 3-letter codes

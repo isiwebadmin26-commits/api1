@@ -18,8 +18,36 @@
       "destination": "/api/security"
     },
     {
+      "source": "/reports/daily",
+      "destination": "/api/reports/daily"
+    },
+    {
+      "source": "/reports/weekly",
+      "destination": "/api/reports/weekly"
+    },
+    {
+      "source": "/reports/monthly",
+      "destination": "/api/reports/monthly"
+    },
+    {
+      "source": "/reports/career",
+      "destination": "/api/reports/career"
+    },
+    {
       "source": "/reports/:path*",
-      "destination": "/api/reports/:path*"
+      "destination": "/api/controller"
+    },
+    {
+      "source": "/api/reports/daily/:path*",
+      "destination": "/api/controller"
+    },
+    {
+      "source": "/api/reports/weekly/:path*",
+      "destination": "/api/controller"
+    },
+    {
+      "source": "/api/reports/monthly/:path*",
+      "destination": "/api/controller"
     }
   ]
 }
