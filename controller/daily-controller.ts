@@ -6,20 +6,31 @@ import {
   getDailyPendingFollowupService,
   executeDailyReportService,
 } from "../lib/daily-service";
+import {
+  sendDailyLeadsEmail,
+  sendDailyTrafficEmail,
+  sendDailyStatsEmail,
+  sendDailyPendingFollowupEmail,
+} from "../lib/micro-report-emails";
 import { parseDryRun } from "../security/validator";
 import { sendRawOrWrapped, sendError } from "../lib/response";
 import { logger } from "../lib/logger";
 
 export async function handleDailyLeads(req: VercelRequest, res: VercelResponse) {
   const start = Date.now();
+  const dryRun = parseDryRun(req);
   try {
-    logger.info("Executing Daily Leads controller", { route: "/reports/daily/leads" });
+    logger.info("Executing Daily Leads controller", { route: "/reports/daily/leads", dryRun });
     const result = await getDailyLeadsService();
+    if (!dryRun) {
+      await sendDailyLeadsEmail(result);
+      logger.info("Daily Leads email dispatched successfully");
+    }
     logger.info("Daily Leads execution success", {
       route: "/reports/daily/leads",
       durationMs: Date.now() - start,
     });
-    return sendRawOrWrapped(res, result);
+    return sendRawOrWrapped(res, { ...result, emailDispatched: !dryRun });
   } catch (error: any) {
     logger.error("Daily Leads execution error", {
       route: "/reports/daily/leads",
@@ -32,14 +43,19 @@ export async function handleDailyLeads(req: VercelRequest, res: VercelResponse) 
 
 export async function handleDailyTraffic(req: VercelRequest, res: VercelResponse) {
   const start = Date.now();
+  const dryRun = parseDryRun(req);
   try {
-    logger.info("Executing Daily Traffic controller", { route: "/reports/daily/traffic" });
+    logger.info("Executing Daily Traffic controller", { route: "/reports/daily/traffic", dryRun });
     const result = await getDailyTrafficService();
+    if (!dryRun) {
+      await sendDailyTrafficEmail(result);
+      logger.info("Daily Traffic email dispatched successfully");
+    }
     logger.info("Daily Traffic execution success", {
       route: "/reports/daily/traffic",
       durationMs: Date.now() - start,
     });
-    return sendRawOrWrapped(res, result);
+    return sendRawOrWrapped(res, { ...result, emailDispatched: !dryRun });
   } catch (error: any) {
     logger.error("Daily Traffic execution error", {
       route: "/reports/daily/traffic",
@@ -52,14 +68,19 @@ export async function handleDailyTraffic(req: VercelRequest, res: VercelResponse
 
 export async function handleDailyStats(req: VercelRequest, res: VercelResponse) {
   const start = Date.now();
+  const dryRun = parseDryRun(req);
   try {
-    logger.info("Executing Daily Stats controller", { route: "/reports/daily/stats" });
+    logger.info("Executing Daily Stats controller", { route: "/reports/daily/stats", dryRun });
     const result = await getDailyStatsService();
+    if (!dryRun) {
+      await sendDailyStatsEmail(result);
+      logger.info("Daily Stats email dispatched successfully");
+    }
     logger.info("Daily Stats execution success", {
       route: "/reports/daily/stats",
       durationMs: Date.now() - start,
     });
-    return sendRawOrWrapped(res, result);
+    return sendRawOrWrapped(res, { ...result, emailDispatched: !dryRun });
   } catch (error: any) {
     logger.error("Daily Stats execution error", {
       route: "/reports/daily/stats",
@@ -72,14 +93,19 @@ export async function handleDailyStats(req: VercelRequest, res: VercelResponse) 
 
 export async function handleDailyPendingFollowup(req: VercelRequest, res: VercelResponse) {
   const start = Date.now();
+  const dryRun = parseDryRun(req);
   try {
-    logger.info("Executing Daily Pending Followup controller", { route: "/reports/daily/pending-followup" });
+    logger.info("Executing Daily Pending Followup controller", { route: "/reports/daily/pending-followup", dryRun });
     const result = await getDailyPendingFollowupService();
+    if (!dryRun) {
+      await sendDailyPendingFollowupEmail(result);
+      logger.info("Daily Pending Followup email dispatched successfully");
+    }
     logger.info("Daily Pending Followup execution success", {
       route: "/reports/daily/pending-followup",
       durationMs: Date.now() - start,
     });
-    return sendRawOrWrapped(res, result);
+    return sendRawOrWrapped(res, { ...result, emailDispatched: !dryRun });
   } catch (error: any) {
     logger.error("Daily Pending Followup execution error", {
       route: "/reports/daily/pending-followup",

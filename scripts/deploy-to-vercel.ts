@@ -40,21 +40,32 @@ function getSha1(buffer: Buffer): string {
 
 async function uploadFile(buffer: Buffer, sha: string) {
   const url = `https://api.vercel.com/v2/files?teamId=${TEAM_ID}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${VERCEL_TOKEN}`,
-      "x-vercel-digest": sha,
-      "Content-Length": buffer.length.toString(),
-      "Content-Type": "application/octet-stream",
-    },
-    body: buffer,
-  });
+  let lastErr: any;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${VERCEL_TOKEN}`,
+          "x-vercel-digest": sha,
+          "Content-Length": buffer.length.toString(),
+          "Content-Type": "application/octet-stream",
+        },
+        body: buffer,
+      });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Upload failed for SHA ${sha}: ${res.status} ${errText}`);
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Upload failed for SHA ${sha}: ${res.status} ${errText}`);
+      }
+      return;
+    } catch (err: any) {
+      lastErr = err;
+      console.warn(`[Attempt ${attempt}/4] Upload error for ${sha.slice(0, 8)}: ${err.message}. Retrying...`);
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+    }
   }
+  throw lastErr;
 }
 
 async function main() {
