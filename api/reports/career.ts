@@ -1,24 +1,21 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { runCareerReport } from "../../lib/career-report";
+import { config } from "dotenv";
+import path from "path";
+import { runSecurityMiddleware } from "../../security";
+import { handleCareerReport } from "../../controller/career-controller";
 
+config({ path: path.join(process.cwd(), ".env.local") });
+
+/**
+ * Backward-compatible endpoint for Career Report
+ * Compatible with existing Jira automation triggers and new /reports/career URL
+ */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== "POST") {
-    return res.status(405).json({
-      success: false,
-      error: "Method not allowed. Only POST is supported."
-    });
-  }
+  const security = runSecurityMiddleware(req, res, {
+    allowedMethods: ["POST", "GET"],
+    requireAuth: true,
+  });
+  if (!security.passed) return;
 
-  const dryRun = req.query.dryRun === "true" || (Array.isArray(req.query.dryRun) && req.query.dryRun[0] === "true");
-
-  try {
-    const result = await runCareerReport({ dryRun });
-    return res.status(200).json(result);
-  } catch (error: any) {
-    console.error("Career report execution error:", error);
-    return res.status(500).json({
-      success: false,
-      error: error?.message || "Report failed"
-    });
-  }
+  return handleCareerReport(req, res);
 }
