@@ -113,19 +113,60 @@ export function getSpreadsheetUrl(): string {
   return `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
 }
 
+interface CacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds TTL
+let tabsCache: CacheEntry<SheetTabInfo[]> | null = null;
+const valuesCache = new Map<string, CacheEntry<any[][]>>();
+
+async function callWithRetry<T>(fn: () => Promise<T>, label: string, maxAttempts = 4): Promise<T> {
+  let delay = 1500;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      const isQuota =
+        err?.status === 429 ||
+        err?.code === 429 ||
+        err?.message?.includes("Quota exceeded") ||
+        err?.message?.includes("RESOURCE_EXHAUSTED");
+      if (isQuota && attempt < maxAttempts) {
+        console.warn(`[Google Sheets Quota] ${label} throttled (attempt ${attempt}/${maxAttempts}). Waiting ${delay}ms before retrying...`);
+        await new Promise((r) => setTimeout(r, delay));
+        delay *= 2;
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error(`${label} failed after ${maxAttempts} attempts`);
+}
+
 export interface SheetTabInfo {
   title: string;
   sheetId: number;
 }
 
-export async function fetchAllSheetTabs(): Promise<SheetTabInfo[]> {
+export async function fetchAllSheetTabs(forceRefresh = false): Promise<SheetTabInfo[]> {
+  const now = Date.now();
+  if (!forceRefresh && tabsCache && tabsCache.expiresAt > now) {
+    return tabsCache.data;
+  }
+
   const sheets = getSheetsClient();
   const spreadsheetId = getSpreadsheetId();
 
-  const res = await sheets.spreadsheets.get({
-    spreadsheetId,
-    fields: "sheets.properties.sheetId,sheets.properties.title",
-  });
+  const res = await callWithRetry(
+    () =>
+      sheets.spreadsheets.get({
+        spreadsheetId,
+        fields: "sheets.properties.sheetId,sheets.properties.title",
+      }),
+    "fetchAllSheetTabs"
+  );
 
   const sheetTabs: SheetTabInfo[] = [];
   if (res.data.sheets) {
@@ -139,6 +180,7 @@ export async function fetchAllSheetTabs(): Promise<SheetTabInfo[]> {
     }
   }
 
+  tabsCache = { data: sheetTabs, expiresAt: now + CACHE_TTL_MS };
   return sheetTabs;
 }
 
@@ -175,20 +217,41 @@ export function findMatchingSheetName(
 }
 
 /**
- * Reads all rows from a given sheet tab.
+ * Reads all rows from a given sheet tab with 60s in-memory caching and quota retry.
  */
-export async function readSheetValues(sheetName: string): Promise<any[][]> {
+export async function readSheetValues(sheetName: string, forceRefresh = false): Promise<any[][]> {
+  const now = Date.now();
+  const cacheKey = sheetName.toLowerCase().trim();
+  if (!forceRefresh) {
+    const cached = valuesCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      return cached.data;
+    }
+  }
+
   const sheets = getSheetsClient();
   const spreadsheetId = getSpreadsheetId();
 
   try {
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `'${sheetName}'!A:ZZ`,
-    });
-    return response.data.values ?? [];
+    const response = await callWithRetry(
+      () =>
+        sheets.spreadsheets.values.get({
+          spreadsheetId,
+          range: `'${sheetName}'!A:ZZ`,
+        }),
+      `readSheetValues(${sheetName})`
+    );
+    const values = response.data.values ?? [];
+    valuesCache.set(cacheKey, { data: values, expiresAt: now + CACHE_TTL_MS });
+    return values;
   } catch (err: any) {
     console.warn(`Failed to read sheet ${sheetName}: ${err.message}`);
+    const stale = valuesCache.get(cacheKey);
+    if (stale) {
+      console.warn(`Returning stale cached data for sheet ${sheetName}`);
+      return stale.data;
+    }
     return [];
   }
 }
+

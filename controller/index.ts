@@ -5,14 +5,17 @@ import {
   handleDailyTraffic,
   handleDailyStats,
   handleDailyPendingFollowup,
+  handleDailyReport,
 } from "./daily-controller";
 import {
   handleWeeklyTraffic,
   handleWeeklyCareerApplications,
+  handleWeeklyReport,
 } from "./weekly-controller";
 import {
   handleMonthlyTraffic,
   handleMonthlyCareerApplications,
+  handleMonthlyReport,
 } from "./monthly-controller";
 import { handleCareerReport } from "./career-controller";
 import { sendError, sendSuccess } from "../lib/response";
@@ -36,62 +39,29 @@ export interface RouteDefinition {
  * Jira Automation calls ONLY /controller with one of these 3-letter codes.
  */
 export const API_ROUTES: Record<string, RouteDefinition> = {
-  DRL: {
-    path: "/reports/daily/leads",
-    service: "daily-leads",
-    description: "Daily Lead Generation Report",
-    handler: handleDailyLeads,
+  // 1. Executive Full Reports
+  DEX: {
+    path: "/reports/daily",
+    service: "daily-executive",
+    description: "Daily Executive Analytics Brief Email & KPIs",
+    handler: handleDailyReport,
     methods: ["POST", "GET"],
   },
-  DRT: {
-    path: "/reports/daily/traffic",
-    service: "daily-traffic",
-    description: "Daily Website Traffic & Hourly Trend",
-    handler: handleDailyTraffic,
+  WEX: {
+    path: "/reports/weekly",
+    service: "weekly-executive",
+    description: "Weekly Executive Analytics Brief Email & Trends",
+    handler: handleWeeklyReport,
     methods: ["POST", "GET"],
   },
-  DRS: {
-    path: "/reports/daily/stats",
-    service: "daily-stats",
-    description: "Daily Executive KPIs, Comparison & Conversion Stats",
-    handler: handleDailyStats,
+  MEX: {
+    path: "/reports/monthly",
+    service: "monthly-executive",
+    description: "Monthly Executive Analytics Brief Email & Performance",
+    handler: handleMonthlyReport,
     methods: ["POST", "GET"],
   },
-  DPF: {
-    path: "/reports/daily/pending-followup",
-    service: "daily-pending-followup",
-    description: "Daily Pending Follow-up Report",
-    handler: handleDailyPendingFollowup,
-    methods: ["POST", "GET"],
-  },
-  WRT: {
-    path: "/reports/weekly/traffic",
-    service: "weekly-traffic",
-    description: "Weekly 7-Day Traffic vs Prior Week",
-    handler: handleWeeklyTraffic,
-    methods: ["POST", "GET"],
-  },
-  WCA: {
-    path: "/reports/weekly/career-applications",
-    service: "weekly-career-applications",
-    description: "Weekly Career Applications Submitted",
-    handler: handleWeeklyCareerApplications,
-    methods: ["POST", "GET"],
-  },
-  MRT: {
-    path: "/reports/monthly/traffic",
-    service: "monthly-traffic",
-    description: "Monthly 30-Day Traffic Breakdown",
-    handler: handleMonthlyTraffic,
-    methods: ["POST", "GET"],
-  },
-  MCA: {
-    path: "/reports/monthly/career-applications",
-    service: "monthly-career-applications",
-    description: "Monthly Career Applications Submitted",
-    handler: handleMonthlyCareerApplications,
-    methods: ["POST", "GET"],
-  },
+  // 2. Career Pipeline
   CAR: {
     path: "/reports/career",
     service: "career-digest",
@@ -99,6 +69,73 @@ export const API_ROUTES: Record<string, RouteDefinition> = {
     handler: handleCareerReport,
     methods: ["POST", "GET"],
   },
+  // 3. Daily Micro-Reports
+  DRL: {
+    path: "/reports/daily/leads",
+    service: "daily-leads",
+    description: "Daily Lead Generation Report & Email",
+    handler: handleDailyLeads,
+    methods: ["POST", "GET"],
+  },
+  DRT: {
+    path: "/reports/daily/traffic",
+    service: "daily-traffic",
+    description: "Daily Website Traffic & Hourly Trend Email",
+    handler: handleDailyTraffic,
+    methods: ["POST", "GET"],
+  },
+  DRS: {
+    path: "/reports/daily/stats",
+    service: "daily-stats",
+    description: "Daily Executive KPIs, Comparison & Conversion Stats Email",
+    handler: handleDailyStats,
+    methods: ["POST", "GET"],
+  },
+  DPF: {
+    path: "/reports/daily/pending-followup",
+    service: "daily-pending-followup",
+    description: "Daily Pending Follow-up Report & Email",
+    handler: handleDailyPendingFollowup,
+    methods: ["POST", "GET"],
+  },
+  // 4. Weekly Micro-Reports
+  WRT: {
+    path: "/reports/weekly/traffic",
+    service: "weekly-traffic",
+    description: "Weekly 7-Day Traffic vs Prior Week Email",
+    handler: handleWeeklyTraffic,
+    methods: ["POST", "GET"],
+  },
+  WCA: {
+    path: "/reports/weekly/career-applications",
+    service: "weekly-career-applications",
+    description: "Weekly Career Applications Submitted Email",
+    handler: handleWeeklyCareerApplications,
+    methods: ["POST", "GET"],
+  },
+  // 5. Monthly Micro-Reports
+  MRT: {
+    path: "/reports/monthly/traffic",
+    service: "monthly-traffic",
+    description: "Monthly 30-Day Traffic Breakdown Email",
+    handler: handleMonthlyTraffic,
+    methods: ["POST", "GET"],
+  },
+  MCA: {
+    path: "/reports/monthly/career-applications",
+    service: "monthly-career-applications",
+    description: "Monthly Career Applications Submitted Email",
+    handler: handleMonthlyCareerApplications,
+    methods: ["POST", "GET"],
+  },
+};
+
+// Aliases for user convenience
+export const CODE_ALIASES: Record<string, string> = {
+  DAY: "DEX",
+  WEE: "WEX",
+  MON: "MEX",
+  MCD: "CAR",
 };
 
 /**
@@ -157,7 +194,8 @@ export async function dispatchController(
     });
   }
 
-  const codeStr = String(rawCode).trim().toUpperCase();
+  const rawUpper = String(rawCode).trim().toUpperCase();
+  const codeStr = CODE_ALIASES[rawUpper] || rawUpper;
 
   // Validate that code is EXACTLY 3 letters
   if (!/^[A-Z]{3}$/.test(codeStr)) {
