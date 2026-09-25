@@ -154,7 +154,7 @@ async function runAllTests() {
   console.log("\n--- 4. Canonical 3-Letter Code Verification ---");
   {
     const { API_ROUTES } = await import("../controller");
-    const requiredCodes = ["DRL", "DRT", "DRS", "WRT", "WCA", "MRT", "MCA", "CAR"];
+    const requiredCodes = ["DRL", "DRT", "DRS", "DPF", "WRT", "WCA", "MRT", "MCA", "CAR"];
 
     for (const code of requiredCodes) {
       const route = API_ROUTES[code];

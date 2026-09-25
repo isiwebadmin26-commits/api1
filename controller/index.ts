@@ -57,6 +57,13 @@ export const API_ROUTES: Record<string, RouteDefinition> = {
     handler: handleDailyStats,
     methods: ["POST", "GET"],
   },
+  DPF: {
+    path: "/reports/daily/pending-followup",
+    service: "daily-pending-followup",
+    description: "Daily Pending Follow-up Report",
+    handler: handleDailyPendingFollowup,
+    methods: ["POST", "GET"],
+  },
   WRT: {
     path: "/reports/weekly/traffic",
     service: "weekly-traffic",
