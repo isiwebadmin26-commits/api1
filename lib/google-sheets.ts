@@ -133,8 +133,16 @@ async function callWithRetry<T>(fn: () => Promise<T>, label: string, maxAttempts
         err?.code === 429 ||
         err?.message?.includes("Quota exceeded") ||
         err?.message?.includes("RESOURCE_EXHAUSTED");
-      if (isQuota && attempt < maxAttempts) {
-        console.warn(`[Google Sheets Quota] ${label} throttled (attempt ${attempt}/${maxAttempts}). Waiting ${delay}ms before retrying...`);
+      const isNetworkError =
+        err?.code === "ECONNRESET" ||
+        err?.code === "ETIMEDOUT" ||
+        err?.code === "ENOTFOUND" ||
+        err?.message?.includes("socket disconnected") ||
+        err?.message?.includes("Client network socket disconnected") ||
+        err?.message?.includes("ECONNRESET");
+
+      if ((isQuota || isNetworkError) && attempt < maxAttempts) {
+        console.warn(`[Google Sheets ${isQuota ? "Quota" : "Network"}] ${label} error (${err.message}) (attempt ${attempt}/${maxAttempts}). Waiting ${delay}ms before retrying...`);
         await new Promise((r) => setTimeout(r, delay));
         delay *= 2;
         continue;
