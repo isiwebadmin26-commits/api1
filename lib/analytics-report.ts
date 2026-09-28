@@ -269,15 +269,30 @@ export async function aggregateLeadsFromAllSources(
     { canonical: "Newsletter_Subscribers", isLead: false, isEnquiry: true, category: "Newsletter Subscribers" },
   ];
 
-  const visitedSheets = new Set<number>();
-
-  for (const item of FORM_SOURCES) {
+  // Resolve matching tabs
+  const resolved = FORM_SOURCES.map((item) => {
     const tab = findMatchingSheetName(item.canonical, allTabs);
-    if (!tab) continue;
-    if (visitedSheets.has(tab.sheetId)) continue;
-    visitedSheets.add(tab.sheetId);
+    return { item, tab };
+  }).filter((x): x is { item: (typeof FORM_SOURCES)[number]; tab: SheetTabInfo } => Boolean(x.tab));
 
-    const data = await readSheetValues(tab.title);
+  // Deduplicate by sheetId
+  const uniqueTabsMap = new Map<number, { tab: SheetTabInfo; items: (typeof FORM_SOURCES)[number][] }>();
+  for (const { item, tab } of resolved) {
+    if (!uniqueTabsMap.has(tab.sheetId)) {
+      uniqueTabsMap.set(tab.sheetId, { tab, items: [] });
+    }
+    uniqueTabsMap.get(tab.sheetId)!.items.push(item);
+  }
+
+  // Fetch unique sheets in parallel
+  const loadedTabs = await Promise.all(
+    Array.from(uniqueTabsMap.values()).map(async ({ tab, items }) => {
+      const data = await readSheetValues(tab.title);
+      return { tab, items, data };
+    })
+  );
+
+  for (const { items, data } of loadedTabs) {
     if (!data || data.length < 2) continue;
     const headers = data[0] as string[];
 
@@ -288,16 +303,18 @@ export async function aggregateLeadsFromAllSources(
     const srcCol = headers.indexOf("Source") !== -1 ? headers.indexOf("Source") : headers.indexOf("UTM Source");
     const pageCol = headers.indexOf("Page") !== -1 ? headers.indexOf("Page") : headers.indexOf("Page Path");
 
+    const primaryItem = items[0];
+
     for (let r = 1; r < data.length; r++) {
       const row = data[r];
       const ts = parseSheetDate(row[tsCol]);
       if (!ts) continue;
       const tTime = ts.getTime();
       if (tTime >= sTime && tTime <= eTime) {
-        if (item.isLead) result.totalLeads++;
+        if (primaryItem.isLead) result.totalLeads++;
         result.totalEnquiries++;
 
-        const categoryLabel = item.category || getFormCategoryLabel(item.canonical);
+        const categoryLabel = primaryItem.category || getFormCategoryLabel(primaryItem.canonical);
         result.byForm[categoryLabel] = (result.byForm[categoryLabel] || 0) + 1;
 
         const rawSrc = srcCol !== -1 ? row[srcCol] : "Direct";
@@ -305,7 +322,7 @@ export async function aggregateLeadsFromAllSources(
         if (!result.bySource[normSrc]) {
           result.bySource[normSrc] = { leads: 0, enquiries: 0 };
         }
-        if (item.isLead) result.bySource[normSrc].leads++;
+        if (primaryItem.isLead) result.bySource[normSrc].leads++;
         result.bySource[normSrc].enquiries++;
 
         const rawPage = pageCol !== -1 ? String(row[pageCol] || "/") : "/";
@@ -313,7 +330,7 @@ export async function aggregateLeadsFromAllSources(
         result.byPage[cleanRoute] = (result.byPage[cleanRoute] || 0) + 1;
 
         // Trend aggregation bucket
-        if (trendLeadsRef && item.isLead) {
+        if (trendLeadsRef && primaryItem.isLead) {
           if (periodType === "DAILY") {
             const istHours = (ts.getUTCHours() + 5.5) % 24;
             const bIdx = Math.min(7, Math.floor(istHours / 3));

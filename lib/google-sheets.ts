@@ -118,7 +118,7 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
-const CACHE_TTL_MS = 60 * 1000; // 60 seconds TTL
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes TTL
 let tabsCache: CacheEntry<SheetTabInfo[]> | null = null;
 const valuesCache = new Map<string, CacheEntry<any[][]>>();
 

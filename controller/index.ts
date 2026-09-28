@@ -130,18 +130,66 @@ export const API_ROUTES: Record<string, RouteDefinition> = {
   },
 };
 
-// Aliases for user convenience
+// Comprehensive aliases for Jira automation rules and user convenience
 export const CODE_ALIASES: Record<string, string> = {
   DAY: "DEX",
   WEE: "WEX",
   MON: "MEX",
   MCD: "CAR",
+
+  // Jira Rule Names & variations
+  REPORT_WEEKLY_EXECUTIVE_EMAIL: "WEX",
+  REPORTWEEKLYEXECUTIVEEMAIL: "WEX",
+  WEEKLY_EXECUTIVE_EMAIL: "WEX",
+  WEEKLYEXECUTIVEEMAIL: "WEX",
+  WEEKLY_EXECUTIVE: "WEX",
+  WEEKLYEXECUTIVE: "WEX",
+  WEEKLY_REPORT: "WEX",
+  WEEKLYREPORT: "WEX",
+  WEEKLY: "WEX",
+
+  REPORT_DAILY_EXECUTIVE_EMAIL: "DEX",
+  REPORTDAILYEXECUTIVEEMAIL: "DEX",
+  DAILY_EXECUTIVE_EMAIL: "DEX",
+  DAILYEXECUTIVEEMAIL: "DEX",
+  DAILY_EXECUTIVE: "DEX",
+  DAILYEXECUTIVE: "DEX",
+  DAILY_REPORT: "DEX",
+  DAILYREPORT: "DEX",
+  DAILY: "DEX",
+
+  REPORT_MONTHLY_EXECUTIVE_EMAIL: "MEX",
+  REPORTMONTHLYEXECUTIVEEMAIL: "MEX",
+  MONTHLY_EXECUTIVE_EMAIL: "MEX",
+  MONTHLYEXECUTIVEEMAIL: "MEX",
+  MONTHLY_EXECUTIVE: "MEX",
+  MONTHLYEXECUTIVE: "MEX",
+  MONTHLY_REPORT: "MEX",
+  MONTHLYREPORT: "MEX",
+  MONTHLY: "MEX",
+
+  REPORT_CAREER: "CAR",
+  REPORTCAREER: "CAR",
+  CAREER_DIGEST: "CAR",
+  CAREERDIGEST: "CAR",
+  CAREER: "CAR",
+
+  // Micro-reports aliases
+  REPORT_DAILY_LEADS: "DRL",
+  REPORT_DAILY_TRAFFIC: "DRT",
+  REPORT_DAILY_STATS: "DRS",
+  REPORT_DAILY_PENDING_FOLLOWUP: "DPF",
+  REPORT_WEEKLY_TRAFFIC: "WRT",
+  REPORT_WEEKLY_CAREER_APPLICATIONS: "WCA",
+  REPORT_MONTHLY_TRAFFIC: "MRT",
+  REPORT_MONTHLY_CAREER_APPLICATIONS: "MCA",
+  DRPF: "DPF",
 };
 
 /**
  * Controller Router Dispatcher
  * The central gateway for all Jira-triggered report executions.
- * Validates request, enforces 3-letter code pattern, checks auth, and dispatches in-process.
+ * Validates request, enforces code resolution, checks auth, and dispatches in-process.
  */
 export async function dispatchController(
   req: VercelRequest,
@@ -155,8 +203,20 @@ export async function dispatchController(
 
   // Extract controller code from body (preferred for POST) or query string
   let rawCode =
-    (req.body && typeof req.body === "object" ? req.body.code : undefined) ||
-    (req.query.code as string);
+    (req.body && typeof req.body === "object"
+      ? req.body.code ||
+        req.body.rule ||
+        req.body.ruleName ||
+        req.body.name ||
+        req.body.action ||
+        req.body.report ||
+        req.body.trigger
+      : undefined) ||
+    (req.query.code as string) ||
+    (req.query.rule as string) ||
+    (req.query.ruleName as string) ||
+    (req.query.name as string) ||
+    (req.query.report as string);
 
   // Fallback: match URL path (e.g. /reports/daily/leads -> DRL)
   if (!rawCode) {
@@ -195,28 +255,28 @@ export async function dispatchController(
   }
 
   const rawUpper = String(rawCode).trim().toUpperCase();
-  const codeStr = CODE_ALIASES[rawUpper] || rawUpper;
-
-  // Validate that code is EXACTLY 3 letters
-  if (!/^[A-Z]{3}$/.test(codeStr)) {
-    logger.warn("Controller received invalid code length or format", {
-      code: codeStr,
-      length: codeStr.length,
-    });
-    return sendError(
-      res,
-      400,
-      `Invalid controller code '${codeStr}'. Code must be exactly 3 uppercase letters (e.g., ${Object.keys(
-        API_ROUTES
-      ).join(", ")}).`,
-      "INVALID_CODE_FORMAT"
-    );
-  }
+  const stripped = rawUpper.replace(/[\s\-_]/g, "");
+  const codeStr = CODE_ALIASES[rawUpper] || CODE_ALIASES[stripped] || rawUpper;
 
   const routeDef = API_ROUTES[codeStr];
 
   if (!routeDef) {
-    logger.warn("Unknown controller code requested", { code: codeStr });
+    if (!/^[A-Z]{3}$/.test(codeStr)) {
+      logger.warn("Controller received invalid code length or format", {
+        code: rawCode,
+        resolved: codeStr,
+      });
+      return sendError(
+        res,
+        400,
+        `Invalid controller code '${rawCode}'. Code must be exactly 3 uppercase letters (e.g., ${Object.keys(
+          API_ROUTES
+        ).join(", ")}).`,
+        "INVALID_CODE_FORMAT"
+      );
+    }
+
+    logger.warn("Unknown controller code requested", { code: rawCode, resolved: codeStr });
     return sendError(
       res,
       400,

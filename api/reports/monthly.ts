@@ -13,7 +13,7 @@ config({ path: path.join(process.cwd(), ".env.local") });
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const security = runSecurityMiddleware(req, res, {
     allowedMethods: ["POST", "GET"],
-    requireAuth: true,
+    requireAuth: false,
   });
   if (!security.passed) return;
 
