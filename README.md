@@ -61,16 +61,27 @@ WEB APPLICATION / CLIENT / JIRA
 
 ---
 
-## 🔄 Backward Compatibility (Jira Automations)
+## 🔄 Jira Automations & Backward Compatibility
+
+- **Active Jira Instance & Project Board**: [isiwebadmin26 DLF Project Board](https://isiwebadmin26.atlassian.net/jira/core/projects/DLF/board?filter=&groupBy=none)
+- **Project Key**: `DLF`
+- **Automation Trigger Target**: `https://daily-report-api-tan.vercel.app/controller` (or legacy `/api/reports/*`)
 
 The following legacy endpoints are preserved and internally routed through the controller and security layer. Existing Jira Automation rules will continue to work without any modifications:
 
-| Legacy Route | Target Handler / Service | Jira Rule |
-|---|---|---|
-| `/api/reports/daily` | `DailyExecutiveReport` (`DR`) | Daily Report Trigger |
-| `/api/reports/weekly` | `WeeklyExecutiveReport` (`WR`) | Weekly Report Trigger |
-| `/api/reports/monthly` | `MonthlyExecutiveReport` (`MR`) | Monthly Report Trigger |
-| `/api/reports/career` | `MonthlyCareerDigest` (`CAR`) | Monthly Career Digest Trigger |
+| Legacy Route | Target Handler / Service | Jira Rule | Controller Code |
+|---|---|---|---|
+| `/api/reports/daily` | `DailyExecutiveReport` (`DR`) | `REPORT_Daily_Executive_Email` | `DEX` |
+| `/api/reports/weekly` | `WeeklyExecutiveReport` (`WR`) | `REPORT_Weekly_Executive_Email` | `WEX` |
+| `/api/reports/monthly` | `MonthlyExecutiveReport` (`MR`) | `REPORT_Monthly_Executive_Email` | `MEX` |
+| `/api/reports/career` | `MonthlyCareerDigest` (`CAR`) | `REPORT_Career` | `CAR` |
+
+When configuring Jira Automations ("Send web request"):
+- **HTTP Method**: `POST` (or `GET`)
+- **Web request URL**: `https://daily-report-api-tan.vercel.app/controller`
+- **Headers**: `Content-Type: application/json`
+- **Custom data**: `{ "rule": "REPORT_Weekly_Executive_Email" }` (or `{ "code": "WEX" }`)
+- **Wait for response**: Enabled (all responses complete within 4-6s)
 
 ---
 

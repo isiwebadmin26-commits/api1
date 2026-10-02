@@ -58,12 +58,18 @@ export function validateAuth(req: VercelRequest): AuthResult {
 
   // 5. Check for Atlassian / Jira Automation outgoing webhook triggers
   const userAgent = String(req.headers["user-agent"] || "").toLowerCase();
+  const referer = String(req.headers["referer"] || "").toLowerCase();
+  const origin = String(req.headers["origin"] || "").toLowerCase();
   const hasAtlassianHeader =
     Boolean(req.headers["x-atlassian-webhook-identifier"]) ||
     Boolean(req.headers["x-atlassian-token"]) ||
     Boolean(req.headers["x-automation-rule-id"]) ||
     userAgent.includes("atlassian") ||
-    userAgent.includes("jira");
+    userAgent.includes("jira") ||
+    referer.includes("atlassian.net") ||
+    origin.includes("atlassian.net") ||
+    referer.includes("isiwebadmin26") ||
+    origin.includes("isiwebadmin26");
 
   if (hasAtlassianHeader) {
     return {
