@@ -222,6 +222,72 @@ async function runAllTests() {
     assert(parsed.normalField === "visible_value", "Non-sensitive field is preserved in logs");
   }
 
+  // 8. Email Deduplication & Scheduling Frequency Guard
+  console.log("\n--- 8. Email Deduplication & Scheduling Frequency Guard ---");
+  {
+    const { deduplicateEmails } = await import("../lib/email");
+    const {
+      canDispatchEmail,
+      recordEmailDispatch,
+      clearDispatchHistory,
+      getDeduplicationKey,
+    } = await import("../lib/email-dedup");
+
+    clearDispatchHistory();
+
+    // 8a. Recipient email deduplication
+    const rawEmails = "poojasri.aram@gmail.com, bv@trustflow.in, POOJASRI.ARAM@GMAIL.COM, bv@trustflow.in, invalid-email";
+    const cleanList = deduplicateEmails(rawEmails);
+    assert(cleanList.length === 2, "Duplicate and invalid emails are filtered out");
+    assert(cleanList.includes("poojasri.aram@gmail.com"), "Unique email 1 preserved in lowercase");
+    assert(cleanList.includes("bv@trustflow.in"), "Unique email 2 preserved in lowercase");
+
+    // 8b. Daily Traffic Deduplication
+    const trafficKey = getDeduplicationKey("daily-traffic");
+    assert(trafficKey.startsWith("daily-traffic:"), "Daily traffic key formatted with date");
+
+    const check1 = canDispatchEmail("daily-traffic");
+    assert(check1.allowed === true, "First daily traffic dispatch is allowed");
+
+    recordEmailDispatch("daily-traffic", { test: true });
+    const check2 = canDispatchEmail("daily-traffic");
+    assert(check2.allowed === false, "Second daily traffic dispatch on same day is blocked as duplicate");
+    assert(check2.reason === "ALREADY_SENT", "Reason indicates ALREADY_SENT");
+
+    // Override with force flag
+    const checkForce = canDispatchEmail("daily-traffic", { force: true });
+    assert(checkForce.allowed === true, "Force flag bypasses daily traffic deduplication");
+
+    // 8c. Daily Leads Deduplication
+    const checkLeads1 = canDispatchEmail("daily-leads");
+    assert(checkLeads1.allowed === true, "Daily leads dispatch is allowed independently of traffic");
+    recordEmailDispatch("daily-leads", { test: true });
+    const checkLeads2 = canDispatchEmail("daily-leads");
+    assert(checkLeads2.allowed === false, "Second daily leads dispatch on same day is blocked as duplicate");
+
+    // 8d. Weekly Once Guard
+    const weeklyKey = getDeduplicationKey("weekly");
+    assert(weeklyKey.startsWith("weekly:"), "Weekly key contains ISO week string");
+
+    const checkWeekly1 = canDispatchEmail("weekly");
+    assert(checkWeekly1.allowed === true, "First weekly report dispatch is allowed");
+    recordEmailDispatch("weekly", { test: true });
+    const checkWeekly2 = canDispatchEmail("weekly");
+    assert(checkWeekly2.allowed === false, "Second weekly report dispatch in same week is blocked");
+
+    // 8e. Monthly Once Guard
+    const monthlyKey = getDeduplicationKey("monthly");
+    assert(monthlyKey.startsWith("monthly:"), "Monthly key contains year-month string");
+
+    const checkMonthly1 = canDispatchEmail("monthly");
+    assert(checkMonthly1.allowed === true, "First monthly report dispatch is allowed");
+    recordEmailDispatch("monthly", { test: true });
+    const checkMonthly2 = canDispatchEmail("monthly");
+    assert(checkMonthly2.allowed === false, "Second monthly report dispatch in same month is blocked");
+
+    clearDispatchHistory();
+  }
+
   console.log("\n==================================================");
   console.log(`🏁 TEST RESULTS: ${passed} PASSED, ${failed} FAILED`);
   console.log("==================================================");

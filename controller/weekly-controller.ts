@@ -8,25 +8,29 @@ import {
   sendWeeklyTrafficEmail,
   sendWeeklyCareerAppsEmail,
 } from "../lib/micro-report-emails";
-import { parseDryRun } from "../security/validator";
+import { parseDryRun, parseForce, parseSendEmail } from "../security/validator";
+import { canDispatchEmail, recordEmailDispatch } from "../lib/email-dedup";
 import { sendRawOrWrapped, sendError } from "../lib/response";
 import { logger } from "../lib/logger";
 
+/**
+ * Weekly Traffic Controller
+ * Metrics endpoint: does not send separate email unless explicitly requested.
+ */
 export async function handleWeeklyTraffic(req: VercelRequest, res: VercelResponse) {
   const start = Date.now();
   const dryRun = parseDryRun(req);
+  const shouldSendEmail = parseSendEmail(req, true);
   try {
-    logger.info("Executing Weekly Traffic controller", { route: "/reports/weekly/traffic", dryRun });
+    logger.info("Executing Weekly Traffic controller", { route: "/reports/weekly/traffic", dryRun, shouldSendEmail });
     const result = await getWeeklyTrafficService();
-    if (!dryRun) {
+    let emailDispatched = false;
+    if (!dryRun && shouldSendEmail) {
       await sendWeeklyTrafficEmail(result);
+      emailDispatched = true;
       logger.info("Weekly Traffic email dispatched successfully");
     }
-    logger.info("Weekly Traffic execution success", {
-      route: "/reports/weekly/traffic",
-      durationMs: Date.now() - start,
-    });
-    return sendRawOrWrapped(res, { ...result, emailDispatched: !dryRun });
+    return sendRawOrWrapped(res, { ...result, emailDispatched });
   } catch (error: any) {
     logger.error("Weekly Traffic execution error", {
       route: "/reports/weekly/traffic",
@@ -37,24 +41,28 @@ export async function handleWeeklyTraffic(req: VercelRequest, res: VercelRespons
   }
 }
 
+/**
+ * Weekly Career Applications Controller
+ * Triggered on demand via controller (code WCA)
+ */
 export async function handleWeeklyCareerApplications(req: VercelRequest, res: VercelResponse) {
   const start = Date.now();
   const dryRun = parseDryRun(req);
+  const shouldSendEmail = parseSendEmail(req, true);
   try {
     logger.info("Executing Weekly Career Applications controller", {
       route: "/reports/weekly/career-applications",
       dryRun,
+      shouldSendEmail,
     });
     const result = await getWeeklyCareerApplicationsService();
-    if (!dryRun) {
+    let emailDispatched = false;
+    if (!dryRun && shouldSendEmail) {
       await sendWeeklyCareerAppsEmail(result);
+      emailDispatched = true;
       logger.info("Weekly Career Applications email dispatched successfully");
     }
-    logger.info("Weekly Career Applications execution success", {
-      route: "/reports/weekly/career-applications",
-      durationMs: Date.now() - start,
-    });
-    return sendRawOrWrapped(res, { ...result, emailDispatched: !dryRun });
+    return sendRawOrWrapped(res, { ...result, emailDispatched });
   } catch (error: any) {
     logger.error("Weekly Career Applications execution error", {
       route: "/reports/weekly/career-applications",
@@ -70,17 +78,56 @@ export async function handleWeeklyCareerApplications(req: VercelRequest, res: Ve
   }
 }
 
+/**
+ * Primary Weekly Report Runner (/reports/weekly or WEX)
+ * Dispatched WEEKLY ONCE.
+ * Guarded by deduplication: prevents accidental daily triggers from spamming weekly reports.
+ */
 export async function handleWeeklyReport(req: VercelRequest, res: VercelResponse) {
   const start = Date.now();
   const dryRun = parseDryRun(req);
+  const force = parseForce(req);
   try {
-    logger.info("Executing Weekly Report runner", { route: "/reports/weekly", dryRun });
-    const result = await executeWeeklyReportService({ dryRun });
+    logger.info("Executing Weekly Report runner", { route: "/reports/weekly", dryRun, force });
+
+    let emailDispatched = false;
+    let duplicateSkipped = false;
+    let dedupMessage = "Weekly Executive Report execution started";
+
+    if (!dryRun) {
+      const check = canDispatchEmail("weekly", { force });
+      if (!check.allowed) {
+        duplicateSkipped = true;
+        dedupMessage = check.message || "Weekly report already dispatched this week. Duplicate prevented.";
+        logger.warn(dedupMessage);
+      }
+    }
+
+    // If duplicate was detected and force is not set, run in dryRun mode so data is returned without email re-send
+    const actualDryRun = dryRun || duplicateSkipped;
+    const result = await executeWeeklyReportService({ dryRun: actualDryRun });
+
+    if (!actualDryRun) {
+      recordEmailDispatch("weekly", { period: result.period });
+      emailDispatched = true;
+      dedupMessage = "Weekly Executive Email dispatched successfully";
+      logger.info(dedupMessage);
+    }
+
     logger.info("Weekly Report execution success", {
       route: "/reports/weekly",
+      emailDispatched,
+      duplicateSkipped,
       durationMs: Date.now() - start,
     });
-    return sendRawOrWrapped(res, result);
+
+    return sendRawOrWrapped(res, {
+      ...result,
+      emailDispatched,
+      duplicateSkipped,
+      policy: "Weekly report triggered weekly once",
+      message: dedupMessage,
+    });
   } catch (error: any) {
     logger.error("Weekly Report execution error", {
       route: "/reports/weekly",

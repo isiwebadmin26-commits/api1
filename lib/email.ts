@@ -25,18 +25,35 @@ export function cleanEmailText(str: string): string {
     .trim();
 }
 
+export function deduplicateEmails(emails?: string | string[]): string[] {
+  if (!emails) return [];
+  const list = Array.isArray(emails)
+    ? emails
+    : String(emails).split(",");
+  const seen = new Set<string>();
+  const clean: string[] = [];
+  for (const item of list) {
+    const trimmed = item.trim().toLowerCase();
+    if (trimmed && !seen.has(trimmed) && trimmed.includes("@")) {
+      seen.add(trimmed);
+      clean.push(trimmed);
+    }
+  }
+  return clean;
+}
+
 /**
- * Returns array of clean email recipients from environment variable or fallback.
+ * Returns array of unique, clean email recipients from environment variable or fallback.
  */
 export function getReportRecipients(): string[] {
   const envVal = process.env.EMAIL_TO;
   if (envVal && envVal.trim()) {
-    return envVal.split(",").map((e) => e.trim()).filter(Boolean);
+    return deduplicateEmails(envVal);
   }
-  return [
+  return deduplicateEmails([
     "poojasri.aram@gmail.com",
     "bv@trustflow.in",
-  ];
+  ]);
 }
 
 /**
@@ -45,12 +62,12 @@ export function getReportRecipients(): string[] {
 export function getCareerRecipients(): string[] {
   const envVal = process.env.CAREER_EMAIL_TO || process.env.EMAIL_TO;
   if (envVal && envVal.trim()) {
-    return envVal.split(",").map((e) => e.trim()).filter(Boolean);
+    return deduplicateEmails(envVal);
   }
-  return [
+  return deduplicateEmails([
     "poojasri.aram@gmail.com",
     "bv@trustflow.in",
-  ];
+  ]);
 }
 
 export async function sendEmail({
@@ -73,7 +90,14 @@ export async function sendEmail({
   }
 
   const sender = from || process.env.EMAIL_FROM || user;
-  const recipients = Array.isArray(to) ? to.join(", ") : to || getReportRecipients().join(", ");
+  const rawList = to ? (Array.isArray(to) ? to : to.split(",")) : getReportRecipients();
+  const cleanRecipients = deduplicateEmails(rawList);
+
+  if (cleanRecipients.length === 0) {
+    throw new Error("No valid email recipients specified.");
+  }
+
+  const recipients = cleanRecipients.join(", ");
 
   const transporter = nodemailer.createTransport({
     host,

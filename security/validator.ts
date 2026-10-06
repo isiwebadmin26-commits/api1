@@ -32,3 +32,24 @@ export function parseDryRun(req: VercelRequest): boolean {
   }
   return false;
 }
+
+export function parseForce(req: VercelRequest): boolean {
+  const queryVal = sanitizeQueryParam(req.query.force);
+  if (queryVal === "true") return true;
+
+  if (req.body && typeof req.body === "object" && req.body.force === true) {
+    return true;
+  }
+  return false;
+}
+
+export function parseSendEmail(req: VercelRequest, defaultValue = false): boolean {
+  const queryVal = sanitizeQueryParam(req.query.sendEmail);
+  if (queryVal === "true") return true;
+  if (queryVal === "false") return false;
+
+  if (req.body && typeof req.body === "object" && typeof req.body.sendEmail === "boolean") {
+    return req.body.sendEmail;
+  }
+  return defaultValue;
+}

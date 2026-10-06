@@ -144,27 +144,31 @@ async function main() {
     await new Promise((r) => setTimeout(r, 4000));
     attempts++;
 
-    const checkUrl = `https://api.vercel.com/v13/deployments/${deploymentId}?teamId=${TEAM_ID}`;
-    const checkRes = await fetch(checkUrl, {
-      headers: { Authorization: `Bearer ${VERCEL_TOKEN}` },
-    });
-    const checkData = (await checkRes.json()) as any;
-    const state = checkData.readyState || checkData.status;
+    try {
+      const checkUrl = `https://api.vercel.com/v13/deployments/${deploymentId}?teamId=${TEAM_ID}`;
+      const checkRes = await fetch(checkUrl, {
+        headers: { Authorization: `Bearer ${VERCEL_TOKEN}` },
+      });
+      const checkData = (await checkRes.json()) as any;
+      const state = checkData.readyState || checkData.status;
 
-    console.log(`[${attempts * 4}s] Build state: ${state}`);
+      console.log(`[${attempts * 4}s] Build state: ${state}`);
 
-    if (state === "READY") {
-      console.log("\n==================================================");
-      console.log("🎉 VERCEL PRODUCTION DEPLOYMENT IS READY!");
-      console.log(`Production URL: https://${deployData.alias?.[0] || "daily-report-api-tan.vercel.app"}`);
-      console.log("==================================================");
-      return;
-    }
+      if (state === "READY") {
+        console.log("\n==================================================");
+        console.log("🎉 VERCEL PRODUCTION DEPLOYMENT IS READY!");
+        console.log(`Production URL: https://${deployData.alias?.[0] || "daily-report-api-tan.vercel.app"}`);
+        console.log("==================================================");
+        return;
+      }
 
-    if (state === "ERROR" || state === "CANCELED") {
-      console.error("\n❌ Deployment failed with state:", state);
-      console.error(JSON.stringify(checkData.error || checkData, null, 2));
-      process.exit(1);
+      if (state === "ERROR" || state === "CANCELED") {
+        console.error("\n❌ Deployment failed with state:", state);
+        console.error(JSON.stringify(checkData.error || checkData, null, 2));
+        process.exit(1);
+      }
+    } catch (fetchErr: any) {
+      console.warn(`[${attempts * 4}s] Poll fetch warning: ${fetchErr.message}. Retrying...`);
     }
   }
 
